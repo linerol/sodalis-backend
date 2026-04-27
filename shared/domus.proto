@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package domus;
+
+service DomusService {
+  rpc VerifyUser (VerifyUserRequest) returns (VerifyUserResponse);
+}
+
+message VerifyUserRequest {
+  string user_id = 1;   // UUID
+  string coloc_id = 2;  // UUID
+}
+
+message VerifyUserResponse {
+  bool is_valid = 1;
+  string message = 2;
+}

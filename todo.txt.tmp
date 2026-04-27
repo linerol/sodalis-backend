@@ -1,0 +1,111 @@
+### Étape 5 : L'Agrégation GraphQL et le Cache Redis
+
+Actuellement, ton API Gateway ne sait interroger que `Domus`. L'objectif de cette étape est de lui apprendre à interroger `Labor` (pour récupérer les tâches) et de **mettre cette réponse en cache** pour soulager tes microservices.
+
+Voici comment finaliser ta Gateway.
+
+#### 1. Préparation de la Gateway
+
+Ouvre le terminal de ton `api-gateway` et installe le client Redis :
+
+```bash
+npm install redis
+
+```
+
+Modifie ton fichier `api-gateway/.env` pour ajouter l'URL de Labor :
+
+```env
+PORT=4000
+DOMUS_URL=http://localhost:3001
+LABOR_URL=http://localhost:3002
+REDIS_URL=redis://localhost:6379
+
+```
+
+*(Note : Assure-toi d'avoir créé une route `GET /tasks/coloc/:id` dans ton service `Labor` pour que la gateway puisse les récupérer. Je pars du principe que tu l'as ou vas la faire).*
+
+#### 2. Mise à jour du code de la Gateway (`api-gateway/index.js`)
+
+On va étendre le schéma GraphQL et ajouter la logique de cache Redis dans le résolveur.
+
+```javascript
+const express = require('express');
+const { ApolloServer } = require('@apollo/server');
+const { expressMiddleware } = require('@apollo/server/express4');
+const cors = require('cors');
+const axios = require('axios');
+const redis = require('redis');
+require('dotenv').config();
+
+// 1. Initialisation du Cache Redis
+const redisClient = redis.createClient({ url: process.env.REDIS_URL });
+redisClient.on('error', (err) => console.log('Redis Cache Error', err));
+redisClient.connect().then(() => console.log('🗄️ Gateway connectée au Cache Redis'));
+
+// 2. Le Schéma GraphQL enrichi
+const typeDefs = `#graphql
+  type User { id: ID!, name: String!, email: String!, role: String! }
+  type Coloc { id: ID!, name: String!, invite_code: String! }
+  
+  type Task {
+    id: ID!
+    title: String!
+    status: String!
+    assignee_id: ID!
+  }
+
+  type Dashboard {
+    users: [User]
+    tasks: [Task]
+  }
+
+  type Query {
+    # La super-requête qui agrège tout
+    getColocDashboard(colocId: ID!): Dashboard
+  }
+`;
+
+// 3. Les Résolveurs avec logique de Cache
+const resolvers = {
+  Query: {
+    getColocDashboard: async (_, { colocId }) => {
+      const cacheKey = `dashboard_coloc_${colocId}`;
+
+      try {
+        // ÉTAPE A : Vérifier si la donnée est dans le cache Redis
+        const cachedData = await redisClient.get(cacheKey);
+        if (cachedData) {
+          console.log("⚡ Données récupérées depuis le CACHE REDIS");
+          return JSON.parse(cachedData); // On renvoie immédiatement !
+        }
+
+        console.log("🐌 Données non cachées, appel des microservices...");
+        
+        // ÉTAPE B : Si pas en cache, on appelle les services (en parallèle pour aller plus vite)
+        const [usersRes, tasksRes] = await Promise.all([
+          axios.get(`${process.env.DOMUS_URL}/colocs/${colocId}/users`),
+          axios.get(`${process.env.LABOR_URL}/tasks/coloc/${colocId}`) // Assure-toi que cette route existe dans Labor
+        ]);
+
+        const dashboardData = {
+          users: usersRes.data,
+          tasks: tasksRes.data || []
+        };
+
+        // ÉTAPE C : On sauvegarde le résultat dans Redis pour 30 secondes (TTL)
+        await redisClient.setEx(cacheKey, 30, JSON.stringify(dashboardData));
+
+        return dashboardData;
+
+      } catch (error) {
+        console.error("Erreur Gateway:", error.message);
+        throw new Error("Impossible de générer le dashboard");
+      }
+    },
+  },
+};
+
+// ... (Le reste du code d'initialisation ApolloServer reste identique à l'étape 2)
+
+```
