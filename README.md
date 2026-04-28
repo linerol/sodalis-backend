@@ -26,18 +26,18 @@ service-concordia :3003      ← notifications temps réel (Socket.io)
 
 ```mermaid
 flowchart TB
-  client[Client<br/>(navigateur / app mobile)]
+  client["Client\n(navigateur / app mobile)"]
 
   subgraph net[RÉSEAU DOCKER (sodalis-net)]
-    gw[api-gateway :4000<br/>Apollo Server 5 — GraphQL<br/><br/>• Proxy HTTP vers les services<br/>• Vérification JWT + contrôle d'appartenance coloc<br/>• Cache Redis (dashboard, TTL 30 s, invalidation par clé)]
+    gw["api-gateway :4000\nApollo Server 5 — GraphQL\n\n- Proxy HTTP vers les services\n- Vérification JWT + contrôle d'appartenance coloc\n- Cache Redis (dashboard, TTL 30 s, invalidation par clé)"]
 
-    domus[service-domus<br/>:3001 (REST)<br/>:50051 (gRPC)<br/><br/>Utilisateurs<br/>Colocations<br/>Maintenance<br/>Auth (register/login)]
-    labor[service-labor<br/>:3002 (REST)<br/>:50052 (gRPC)<br/><br/>Tâches<br/>Assignations]
-    concordia[service-concordia<br/>:3003 (REST)<br/>+ Socket.io<br/><br/>Notifications<br/>Plaintes<br/>Sondages<br/>Karma]
+    domus["service-domus\n:3001 (REST)\n:50051 (gRPC)\n\nUtilisateurs\nColocations\nMaintenance\nAuth (register/login)"]
+    labor["service-labor\n:3002 (REST)\n:50052 (gRPC)\n\nTâches\nAssignations"]
+    concordia["service-concordia\n:3003 (REST)\n+ Socket.io\n\nNotifications\nPlaintes\nSondages\nKarma"]
 
-    domusdb[(PostgreSQL<br/>domus-db :5432)]
-    labordb[(PostgreSQL<br/>labor-db :5433)]
-    mongodb[(MongoDB<br/>:27017)]
+    domusdb[("PostgreSQL\ndomus-db :5432")]
+    labordb[("PostgreSQL\nlabor-db :5433")]
+    mongodb[("MongoDB\n:27017")]
     redis[(redis :6379)]
 
     gw -->|HTTP| domus
@@ -53,11 +53,11 @@ flowchart TB
 
     gw -.->|Cache Redis| redis
 
-    domus -->|Publish<br/>sodalis_events| redis
-    labor -->|Publish<br/>sodalis_events| redis
+    domus -->|Publish\nsodalis_events| redis
+    labor -->|Publish\nsodalis_events| redis
 
-    redis -->|Subscribe<br/>sodalis_events| concordia
-    redis -->|Subscribe<br/>(score update)| domus
+    redis -->|Subscribe\nsodalis_events| concordia
+    redis -->|Subscribe\n(score update)| domus
   end
 
   client --> gw
