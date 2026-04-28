@@ -115,6 +115,7 @@ const typeDefs = `#graphql
   }
 
   type Query {
+    myColoc: Coloc
     usersByColoc(colocId: ID!): [User]
     tasksByColoc(colocId: ID!): [Task]
     getColocDashboard(colocId: ID!): Dashboard

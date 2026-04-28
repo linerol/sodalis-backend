@@ -14,7 +14,28 @@ const resolvers = require('./resolvers');
 if (!process.env.JWT_SECRET) throw new Error('[FATAL] JWT_SECRET non défini — démarrage refusé');
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+function parseCorsOriginsFromEnv() {
+    const rawList = process.env.CORS_ORIGINS;
+    const rawSingle = process.env.CORS_ORIGIN;
+
+    const list = (rawList || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    if (list.length > 0) return new Set(list);
+    if (rawSingle && rawSingle.trim()) return new Set([rawSingle.trim()]);
+
+    return new Set(['http://localhost:3000']);
+}
+
+const CORS_ORIGINS = parseCorsOriginsFromEnv();
+function corsOriginValidator(origin, cb) {
+    // Autorise les requêtes sans header Origin (curl / server-to-server)
+    if (!origin) return cb(null, true);
+    if (CORS_ORIGINS.has(origin)) return cb(null, true);
+    return cb(new Error(`CORS refusé pour l'origine: ${origin}`));
+}
 
 async function start() {
     const app = express();
@@ -26,7 +47,11 @@ async function start() {
 
     app.use(
         '/graphql',
-        cors({ origin: CORS_ORIGIN }),
+        cors({
+            origin: corsOriginValidator,
+            credentials: true,
+            optionsSuccessStatus: 204,
+        }),
         express.json(),
         expressMiddleware(server, {
             context: async ({ req }) => {

@@ -14,15 +14,47 @@ const socialRoutes = require('./routes/social');
 const karmaRoutes  = require('./routes/karma');
 const publisher    = require('./redis-publisher');
 
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+function parseCorsOriginsFromEnv() {
+    const rawList = process.env.CORS_ORIGINS;
+    const rawSingle = process.env.CORS_ORIGIN;
+
+    const list = (rawList || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    if (list.length > 0) return new Set(list);
+    if (rawSingle && rawSingle.trim()) return new Set([rawSingle.trim()]);
+
+    return new Set(['http://localhost:3000']);
+}
+
+const CORS_ORIGINS = parseCorsOriginsFromEnv();
+function corsOriginValidator(origin, cb) {
+    // Autorise les requêtes sans header Origin (curl / server-to-server)
+    if (!origin) return cb(null, true);
+    if (CORS_ORIGINS.has(origin)) return cb(null, true);
+    return cb(new Error(`CORS refusé pour l'origine: ${origin}`));
+}
 
 const app = express();
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(
+    cors({
+        origin: corsOriginValidator,
+        credentials: true,
+        optionsSuccessStatus: 204,
+    }),
+);
 app.use(pinoHttp({ logger }));
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: CORS_ORIGIN } });
+const io = new Server(server, {
+    cors: {
+        origin: corsOriginValidator,
+        credentials: true,
+    },
+});
 
 app.use('/api', auth, socialRoutes);
 app.use('/api', auth, karmaRoutes);

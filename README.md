@@ -118,6 +118,9 @@ cd api-gateway && npm run dev      # :4000 — à démarrer en dernier
 ### Queries
 
 ```graphql
+# Ma colocation (inclut invite_code)
+myColoc: Coloc
+
 # Dashboard complet d'une colocation (mis en cache)
 getColocDashboard(colocId: ID!): Dashboard
 
@@ -204,7 +207,8 @@ socket.on(`coloc_<colocId>_notifications`, (event) => {
 | `DOMUS_GRPC_URL` | labor | Adresse du serveur gRPC domus |
 | `DOMUS_URL` | gateway | URL HTTP de service-domus |
 | `LABOR_URL` | gateway | URL HTTP de service-labor |
-| `CORS_ORIGIN` | concordia, gateway | Origine autorisée pour CORS |
+| `CORS_ORIGINS` | concordia, gateway | Allowlist d'origines CORS (séparées par virgules). Prioritaire sur `CORS_ORIGIN`. |
+| `CORS_ORIGIN` | concordia, gateway | Origine autorisée pour CORS (fallback rétrocompatible si `CORS_ORIGINS` est vide). |
 
 ---
 

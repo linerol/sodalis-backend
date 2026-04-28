@@ -9,6 +9,8 @@ const validate = require('../middleware/validate');
 if (!process.env.JWT_SECRET) throw new Error('[FATAL] JWT_SECRET non défini — démarrage refusé');
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const router = Router();
 
 // POST /colocs — Créer une coloc (transaction : crée + assigne le créateur comme ADMIN)
@@ -100,6 +102,28 @@ router.post('/join',
         res.json({ coloc, token });
     },
 );
+
+// GET /colocs/:id — Détail d'une coloc (invite_code) — membres de la coloc uniquement
+router.get('/:id', auth, async (req, res) => {
+    const colocId = String(req.params.id);
+    if (!UUID_RE.test(colocId)) {
+        return res.status(404).json({ error: 'Colocation introuvable' });
+    }
+    if (!req.user.coloc_id || String(req.user.coloc_id) !== colocId) {
+        return res.status(403).json({ error: 'Non autorisé — Vous n\'appartenez pas à cette colocation' });
+    }
+
+    const { rows } = await pool.query(
+        'SELECT id, name, invite_code FROM colocs WHERE id = $1',
+        [colocId],
+    );
+
+    if (rows.length === 0) {
+        return res.status(404).json({ error: 'Colocation introuvable' });
+    }
+
+    res.json(rows[0]);
+});
 
 // GET /colocs/:id/users — Membres d'une coloc
 router.get('/:id/users', auth, async (req, res) => {

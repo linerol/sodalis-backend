@@ -7,6 +7,17 @@ const CACHE_TTL = 30;
 
 const resolvers = {
     Query: {
+        myColoc: async (_, __, { user, req }) => {
+            if (!user || !user.coloc_id) {
+                throw new Error('Non autorisé — Aucune colocation associée');
+            }
+            const colocId = user.coloc_id;
+            const { data } = await axios.get(`${DOMUS_URL}/colocs/${colocId}`, {
+                headers: { Authorization: req.headers.authorization },
+            });
+            return data;
+        },
+
         usersByColoc: async (_, { colocId }, { user, req }) => {
             if (!user || (user.role !== 'ADMIN' && user.coloc_id !== colocId)) {
                 throw new Error('Non autorisé — Vous n\'appartenez pas à cette colocation');

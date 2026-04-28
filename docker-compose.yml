@@ -107,6 +107,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Définis JWT_SECRET dans .env}
       GRPC_PORT: 50051
       DATABASE_URL: postgres://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@domus-db:5432/${POSTGRES_DB:-domus_db}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       REDIS_URL: redis://redis:6379
       LABOR_GRPC_URL: service-labor:50052
@@ -166,6 +167,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Définis JWT_SECRET dans .env}
       MONGO_URL: mongodb://concordia-db:27017/concordia_db
       REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     ports:
       - "3003:3003"
@@ -196,6 +198,7 @@ services:
       DOMUS_URL: http://service-domus:3001
       LABOR_URL: http://service-labor:3002
       CONCORDIA_URL: http://service-concordia:3003
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     ports:
       - "4000:4000"
