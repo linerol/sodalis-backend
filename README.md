@@ -28,8 +28,8 @@ service-concordia :3003      ← notifications temps réel (Socket.io)
 flowchart TB
   client["Client\n(navigateur / app mobile)"]
 
-  subgraph net[RÉSEAU DOCKER (sodalis-net)]
-    gw["api-gateway :4000\nApollo Server 5 — GraphQL\n\n- Proxy HTTP vers les services\n- Vérification JWT + contrôle d'appartenance coloc\n- Cache Redis (dashboard, TTL 30 s, invalidation par clé)"]
+  subgraph net["RESEAU DOCKER (sodalis-net)"]
+    gw["api-gateway :4000\nApollo Server 5 - GraphQL\n\n- Proxy HTTP vers les services\n- Verification JWT + controle d'appartenance coloc\n- Cache Redis (dashboard, TTL 30 s, invalidation par cle)"]
 
     domus["service-domus\n:3001 (REST)\n:50051 (gRPC)\n\nUtilisateurs\nColocations\nMaintenance\nAuth (register/login)"]
     labor["service-labor\n:3002 (REST)\n:50052 (gRPC)\n\nTâches\nAssignations"]
@@ -53,11 +53,11 @@ flowchart TB
 
     gw -.->|Cache Redis| redis
 
-    domus -->|Publish\nsodalis_events| redis
-    labor -->|Publish\nsodalis_events| redis
+    domus -->|Publish sodalis_events| redis
+    labor -->|Publish sodalis_events| redis
 
-    redis -->|Subscribe\nsodalis_events| concordia
-    redis -->|Subscribe\n(score update)| domus
+    redis -->|Subscribe sodalis_events| concordia
+    redis -->|Subscribe score update| domus
   end
 
   client --> gw
